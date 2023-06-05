@@ -43,19 +43,19 @@ def _get_version_label(config):
 
 
 def _get_version_list():
-    start_version = (0, 24, 0)
     proc = subprocess.run(["git", "describe", "--abbrev=0"], capture_output=True)
     proc.check_returncode()
     current_version = proc.stdout.decode("utf8")
     current_version_info = current_version.split(".")
     if current_version_info[0] == "0":
+        start_version = (0, 24, 0)
         version_list = [
-            "0.%s" % x for x in range(start_version[1], int(current_version_info[1]) + 1)
+            f"0.{x}"
+            for x in range(start_version[1], int(current_version_info[1]) + 1)
         ]
     else:
         # TODO: When 1.0.0 add code to handle 0.x version list
         version_list = []
-        pass
     # Prepend version 0.19 which was built and uploaded manually:
     version_list.insert(0, "0.19")
     return version_list
@@ -74,7 +74,7 @@ class _VersionHistory(Table):
     repo_root = os.path.abspath(os.path.dirname(__file__))
 
     def _get_setup_py(self, version, git_dir):
-        cmd = ["git", "show", "%s:setup.py" % version]
+        cmd = ["git", "show", f"{version}:setup.py"]
         proc = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, cwd=git_dir)
         stdout, stderr = proc.communicate()
         if proc.returncode > 0:
@@ -94,16 +94,14 @@ class _VersionHistory(Table):
     def get_versions(self, tags, git_dir):
         versions = {}
         for tag in tags:
-            version = {}
             setup_py = self._get_setup_py(tag, git_dir)
-            version["Release Date"] = self._get_date(tag, git_dir)
+            version = {"Release Date": self._get_date(tag, git_dir)}
             for package in self.headers[1:] + ["qiskit_terra"]:
-                version_regex = re.compile(package + '[=|>]=(.*)"')
-                match = version_regex.search(setup_py)
-                if match:
+                version_regex = re.compile(f'{package}[=|>]=(.*)"')
+                if match := version_regex.search(setup_py):
                     ver = match[1]
-                    if "<" in match[1]:
-                        ver = ">=" + ver
+                    if "<" in ver:
+                        ver = f">={ver}"
                     if package != "qiskit_terra":
                         version[package] = ver
                     else:
@@ -119,7 +117,7 @@ class _VersionHistory(Table):
         table += tgroup
         self.options["widths"] = [30, 15, 15, 15, 20, 15]
         tgroup.extend(
-            nodes.colspec(colwidth=col_width, colname="c" + str(idx))
+            nodes.colspec(colwidth=col_width, colname=f"c{str(idx)}")
             for idx, col_width in enumerate(self.col_widths)
         )
 
@@ -168,11 +166,10 @@ def _get_qiskit_metapackage_git_tags(tmp_dir):
     cmd = ["git", "clone", "https://github.com/Qiskit/qiskit.git"]
     proc = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, cwd=tmp_dir)
     stdout, stderr = proc.communicate()
-    if proc.returncode > 0:
-        logger.warn("%s failed with:\nstdout:\n%s\nstderr:\n%s\n" % (cmd, stdout, stderr))
-        return []
-    else:
+    if proc.returncode <= 0:
         return _get_git_tags(os.path.join(tmp_dir, "qiskit"))
+    logger.warn("%s failed with:\nstdout:\n%s\nstderr:\n%s\n" % (cmd, stdout, stderr))
+    return []
 
 
 def _get_git_tags(git_dir):

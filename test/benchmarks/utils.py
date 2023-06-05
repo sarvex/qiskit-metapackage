@@ -100,7 +100,7 @@ def random_circuit(n_qubits, depth, max_operands=3, measure=False,
                 num_angles = 3
             else:
                 num_angles = 0
-            angles = [rng.uniform(0, 2*np.pi) for x in range(num_angles)]
+            angles = [rng.uniform(0, 2*np.pi) for _ in range(num_angles)]
             register_operands = [qr[i] for i in operands]
             op = operation(*angles)
 

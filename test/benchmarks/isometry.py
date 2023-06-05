@@ -43,5 +43,4 @@ class IsometryTranspileBench:
         circuit = transpile(self.circuit, basis_gates=['u1', 'u3', 'u2', 'cx'],
                             coupling_map=coupling, seed_transpiler=0)
         counts = circuit.count_ops()
-        cnot_count = counts.get('cx', 0)
-        return cnot_count
+        return counts.get('cx', 0)

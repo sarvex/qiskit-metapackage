@@ -32,12 +32,14 @@ class ConverterBenchmarks:
         # a tradeoff for speed of benchmarking, creating circuits this size
         # takes more time than is worth it for benchmarks that take a couple
         # seconds
-        if n_qubits >= 20:
-            if depth >= 2048:
-                raise NotImplementedError
-        elif n_qubits == 14:
-            if depth > 2048:
-                raise NotImplementedError
+        if (
+            n_qubits >= 20
+            and depth >= 2048
+            or n_qubits < 20
+            and n_qubits == 14
+            and depth > 2048
+        ):
+            raise NotImplementedError
         self.qc = random_circuit(n_qubits, depth, measure=True,
                                  conditional=True, seed=seed)
         self.dag = converters.circuit_to_dag(self.qc)
